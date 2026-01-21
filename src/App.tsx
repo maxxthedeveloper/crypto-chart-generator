@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
-  CardBody,
   Input,
   Tabs,
   Tab,
@@ -11,6 +10,8 @@ import {
   AutocompleteItem,
   Spinner,
   Slider,
+  Accordion,
+  AccordionItem,
 } from '@heroui/react';
 import { searchTokens, getMarketChart, Token } from './lib/api';
 import { generateSparklineSVG } from './lib/svg';
@@ -77,6 +78,12 @@ function App() {
   );
   const [upColor, setUpColor] = useState(() => localStorage.getItem('upColor') || '#22C55E');
   const [downColor, setDownColor] = useState(() => localStorage.getItem('downColor') || '#EF4444');
+  const [useCustomColor, setUseCustomColor] = useState(() =>
+    localStorage.getItem('useCustomColor') === 'true'
+  );
+  const [customColor, setCustomColor] = useState(() =>
+    localStorage.getItem('customColor') || '#3B82F6'
+  );
   const [strokeWidth, setStrokeWidth] = useState(() =>
     Number(localStorage.getItem('strokeWidth')) || 2
   );
@@ -135,6 +142,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem('downColor', downColor);
   }, [downColor]);
+
+  useEffect(() => {
+    localStorage.setItem('useCustomColor', String(useCustomColor));
+  }, [useCustomColor]);
+
+  useEffect(() => {
+    localStorage.setItem('customColor', customColor);
+  }, [customColor]);
 
   useEffect(() => {
     if (selectedToken) {
@@ -250,6 +265,7 @@ function App() {
       fill,
       upColor,
       downColor,
+      customColor: useCustomColor ? customColor : null,
       strokeWidth,
       smooth,
       smoothTension,
@@ -261,7 +277,7 @@ function App() {
     });
     setSvgCode(result.svg);
     setIsUp(result.isUp);
-  }, [priceData, chartWidth, chartHeight, fill, upColor, downColor, strokeWidth, smooth, smoothTension, showKnob, knobSize, theme, fadeEdges, fadeAmount]);
+  }, [priceData, chartWidth, chartHeight, fill, upColor, downColor, useCustomColor, customColor, strokeWidth, smooth, smoothTension, showKnob, knobSize, theme, fadeEdges, fadeAmount]);
 
   const handleCopy = async () => {
     if (!svgCode) return;
@@ -282,8 +298,9 @@ function App() {
   return (
     <div className="min-h-screen flex">
       {/* Left sidebar - Controls */}
-      <Card className="w-80 rounded-none border-r dark:border-zinc-800 border-zinc-200 dark:bg-zinc-900 bg-white h-screen overflow-y-auto">
-        <CardBody className="gap-5 p-5">
+      <Card className="w-80 rounded-none border-r dark:border-zinc-800 border-zinc-200 dark:bg-zinc-900 bg-white h-screen flex flex-col">
+        {/* Fixed Top Section: Data Source */}
+        <div className="p-5 pb-4 border-b dark:border-zinc-800 border-zinc-200 flex flex-col gap-4 shrink-0">
           {/* Token Search */}
           <Autocomplete
             label="Token"
@@ -337,212 +354,299 @@ function App() {
               <Tab key="4h" title="4h" />
             </Tabs>
           </div>
+        </div>
 
-          {/* Dimensions */}
-          <div>
-            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Dimensions</label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                label="W"
-                size="sm"
-                value={String(chartWidth)}
-                onChange={(e) => handleWidthChange(Number(e.target.value) || 300)}
-                endContent={<span className="text-xs text-zinc-500">px</span>}
-                classNames={{ base: "flex-1" }}
-              />
-              <Button
-                isIconOnly
-                size="sm"
-                variant="flat"
-                onPress={handleToggleLock}
-                className={aspectLocked ? "text-primary" : "text-zinc-500"}
-              >
-                {aspectLocked ? <LinkIcon /> : <UnlinkIcon />}
-              </Button>
-              <Input
-                type="number"
-                label="H"
-                size="sm"
-                value={String(chartHeight)}
-                onChange={(e) => handleHeightChange(Number(e.target.value) || 100)}
-                endContent={<span className="text-xs text-zinc-500">px</span>}
-                classNames={{ base: "flex-1" }}
-              />
-            </div>
-          </div>
-
-          {/* Colors */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Up Color</label>
+        {/* Scrollable Middle: Accordion Sections */}
+        <div className="flex-1 overflow-y-auto px-2">
+          <Accordion
+            selectionMode="multiple"
+            defaultExpandedKeys={["dimensions", "colors", "line-style", "effects"]}
+            variant="light"
+            showDivider
+            itemClasses={{
+              trigger: "py-3 px-3",
+              content: "pb-4 pt-0 px-3",
+              title: "text-sm font-medium",
+              indicator: "rotate-[-90deg] data-[open=true]:rotate-0",
+            }}
+          >
+            {/* Dimensions Section */}
+            <AccordionItem key="dimensions" title="Dimensions">
               <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={upColor}
-                  onChange={(e) => setUpColor(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
-                />
                 <Input
+                  type="number"
+                  label="W"
                   size="sm"
-                  value={upColor}
-                  onChange={(e) => setUpColor(e.target.value)}
+                  value={String(chartWidth)}
+                  onChange={(e) => handleWidthChange(Number(e.target.value) || 300)}
+                  endContent={<span className="text-xs text-zinc-500">px</span>}
+                  classNames={{ base: "flex-1" }}
+                />
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="flat"
+                  onPress={handleToggleLock}
+                  className={aspectLocked ? "text-primary" : "text-zinc-500"}
+                >
+                  {aspectLocked ? <LinkIcon /> : <UnlinkIcon />}
+                </Button>
+                <Input
+                  type="number"
+                  label="H"
+                  size="sm"
+                  value={String(chartHeight)}
+                  onChange={(e) => handleHeightChange(Number(e.target.value) || 100)}
+                  endContent={<span className="text-xs text-zinc-500">px</span>}
                   classNames={{ base: "flex-1" }}
                 />
               </div>
-            </div>
-            <div>
-              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Down Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={downColor}
-                  onChange={(e) => setDownColor(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
-                />
-                <Input
+            </AccordionItem>
+
+            {/* Colors Section */}
+            <AccordionItem key="colors" title="Colors">
+              <div className="flex flex-col gap-3">
+                <Switch
+                  isSelected={useCustomColor}
+                  onValueChange={setUseCustomColor}
                   size="sm"
-                  value={downColor}
-                  onChange={(e) => setDownColor(e.target.value)}
-                  classNames={{ base: "flex-1" }}
-                />
+                >
+                  <span className="text-sm">Use Custom Color</span>
+                </Switch>
+                {useCustomColor ? (
+                  <div className="ml-4 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+                    <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Custom Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={customColor}
+                        onChange={(e) => setCustomColor(e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                      />
+                      <Input
+                        size="sm"
+                        value={customColor}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          if (/^[0-9A-Fa-f]{6}$/.test(value)) {
+                            value = '#' + value;
+                          }
+                          setCustomColor(value);
+                        }}
+                        classNames={{ base: "flex-1" }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Up Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={upColor}
+                          onChange={(e) => setUpColor(e.target.value)}
+                          className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                        />
+                        <Input
+                          size="sm"
+                          value={upColor}
+                          onChange={(e) => setUpColor(e.target.value)}
+                          classNames={{ base: "flex-1" }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Down Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={downColor}
+                          onChange={(e) => setDownColor(e.target.value)}
+                          className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                        />
+                        <Input
+                          size="sm"
+                          value={downColor}
+                          onChange={(e) => setDownColor(e.target.value)}
+                          classNames={{ base: "flex-1" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
+            </AccordionItem>
 
-          {/* Line Thickness */}
-          <div>
-            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
-              Line Thickness: {strokeWidth}px
-            </label>
-            <Slider
-              size="sm"
-              step={0.5}
-              minValue={1}
-              maxValue={5}
-              value={strokeWidth}
-              onChange={(v) => setStrokeWidth(v as number)}
-              classNames={{
-                track: "dark:bg-zinc-700 bg-zinc-200",
-              }}
-            />
-          </div>
+            {/* Line Style Section (Expanded by Default) */}
+            <AccordionItem key="line-style" title="Line Style">
+              <div className="flex flex-col gap-4">
+                {/* Line Thickness */}
+                <div>
+                  <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
+                    Line Thickness: {strokeWidth}px
+                  </label>
+                  <Slider
+                    size="sm"
+                    step={0.5}
+                    minValue={1}
+                    maxValue={5}
+                    value={strokeWidth}
+                    onChange={(v) => setStrokeWidth(v as number)}
+                    classNames={{
+                      track: "dark:bg-zinc-700 bg-zinc-200",
+                    }}
+                  />
+                </div>
 
-          {/* Toggles */}
-          <div className="flex flex-col gap-3">
-            <Switch
-              isSelected={fill}
-              onValueChange={setFill}
-              size="sm"
-            >
-              <span className="text-sm">Gradient Fill</span>
-            </Switch>
-            <Switch
-              isSelected={smooth}
-              onValueChange={setSmooth}
-              size="sm"
-            >
-              <span className="text-sm">Smooth Curves</span>
-            </Switch>
-            <Switch
-              isSelected={showKnob}
-              onValueChange={setShowKnob}
-              size="sm"
-            >
-              <span className="text-sm">End Knob</span>
-            </Switch>
-            <Switch
-              isSelected={fadeEdges}
-              onValueChange={setFadeEdges}
-              size="sm"
-            >
-              <span className="text-sm">Fade Edges</span>
-            </Switch>
-            <Switch
-              isSelected={theme === 'dark'}
-              onValueChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
-              size="sm"
-            >
-              <span className="text-sm">Dark Mode</span>
-            </Switch>
-          </div>
+                {/* Smooth Curves Toggle + Nested Slider */}
+                <div className="flex flex-col gap-3">
+                  <Switch
+                    isSelected={smooth}
+                    onValueChange={setSmooth}
+                    size="sm"
+                  >
+                    <span className="text-sm">Smooth Curves</span>
+                  </Switch>
+                  {smooth && (
+                    <div className="ml-4 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+                      <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
+                        Curve Tension: {smoothTension.toFixed(2)}
+                      </label>
+                      <Slider
+                        size="sm"
+                        step={0.05}
+                        minValue={0.1}
+                        maxValue={1}
+                        value={smoothTension}
+                        onChange={(v) => setSmoothTension(v as number)}
+                        classNames={{
+                          track: "dark:bg-zinc-700 bg-zinc-200",
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </AccordionItem>
 
-          {/* Smooth Tension Slider */}
-          {smooth && (
-            <div>
-              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
-                Curve Tension: {smoothTension.toFixed(2)}
-              </label>
-              <Slider
-                size="sm"
-                step={0.05}
-                minValue={0.1}
-                maxValue={1}
-                value={smoothTension}
-                onChange={(v) => setSmoothTension(v as number)}
-                classNames={{
-                  track: "dark:bg-zinc-700 bg-zinc-200",
-                }}
-              />
-            </div>
-          )}
+            {/* Effects Section */}
+            <AccordionItem key="effects" title="Effects">
+              <div className="flex flex-col gap-4">
+                {/* Gradient Fill */}
+                <Switch
+                  isSelected={fill}
+                  onValueChange={setFill}
+                  size="sm"
+                >
+                  <span className="text-sm">Gradient Fill</span>
+                </Switch>
 
-          {/* Knob Size Slider */}
-          {showKnob && (
-            <div>
-              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
-                Knob Size: {knobSize}px
-              </label>
-              <Slider
-                size="sm"
-                step={1}
-                minValue={4}
-                maxValue={24}
-                value={knobSize}
-                onChange={(v) => setKnobSize(v as number)}
-                classNames={{
-                  track: "dark:bg-zinc-700 bg-zinc-200",
-                }}
-              />
-            </div>
-          )}
+                {/* End Knob Toggle + Nested Slider */}
+                <div className="flex flex-col gap-3">
+                  <Switch
+                    isSelected={showKnob}
+                    onValueChange={setShowKnob}
+                    size="sm"
+                  >
+                    <span className="text-sm">End Knob</span>
+                  </Switch>
+                  {showKnob && (
+                    <div className="ml-4 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+                      <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
+                        Knob Size: {knobSize}px
+                      </label>
+                      <Slider
+                        size="sm"
+                        step={1}
+                        minValue={4}
+                        maxValue={24}
+                        value={knobSize}
+                        onChange={(v) => setKnobSize(v as number)}
+                        classNames={{
+                          track: "dark:bg-zinc-700 bg-zinc-200",
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
 
-          {/* Fade Amount Slider */}
-          {fadeEdges && (
-            <div>
-              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
-                Fade Amount: {fadeAmount}%
-              </label>
-              <Slider
-                size="sm"
-                step={1}
-                minValue={5}
-                maxValue={60}
-                value={fadeAmount}
-                onChange={(v) => setFadeAmount(v as number)}
-                classNames={{
-                  track: "dark:bg-zinc-700 bg-zinc-200",
-                }}
-              />
-            </div>
-          )}
+                {/* Fade Edges Toggle + Nested Slider */}
+                <div className="flex flex-col gap-3">
+                  <Switch
+                    isSelected={fadeEdges}
+                    onValueChange={setFadeEdges}
+                    size="sm"
+                  >
+                    <span className="text-sm">Fade Edges</span>
+                  </Switch>
+                  {fadeEdges && (
+                    <div className="ml-4 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
+                      <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
+                        Fade Amount: {fadeAmount}%
+                      </label>
+                      <Slider
+                        size="sm"
+                        step={1}
+                        minValue={5}
+                        maxValue={60}
+                        value={fadeAmount}
+                        onChange={(v) => setFadeAmount(v as number)}
+                        classNames={{
+                          track: "dark:bg-zinc-700 bg-zinc-200",
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </AccordionItem>
 
-          {/* Copy Button */}
+          </Accordion>
+        </div>
+
+        {/* Fixed Bottom: Copy SVG Button */}
+        <div className="p-5 pt-4 border-t dark:border-zinc-800 border-zinc-200 shrink-0">
           <Button
             onPress={handleCopy}
             isDisabled={!svgCode}
-            color={isUp ? 'success' : 'danger'}
-            variant="flat"
+            variant="solid"
             fullWidth
-            className="mt-auto"
+            className="bg-zinc-900 text-white dark:bg-white dark:text-black font-medium"
           >
             {copied ? 'Copied!' : 'Copy SVG'}
           </Button>
-        </CardBody>
+        </div>
       </Card>
 
       {/* Main area - Chart centered */}
-      <div className="flex-1 flex items-center justify-center dark:bg-black bg-zinc-100">
+      <div className="flex-1 flex items-center justify-center dark:bg-black bg-zinc-100 relative">
+        {/* Dark mode toggle - top right */}
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="absolute top-4 right-4 text-zinc-500 dark:text-zinc-400"
+        >
+          {theme === 'dark' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </Button>
         <div className="flex flex-col items-center justify-center gap-4">
           {loading ? (
             <Spinner size="lg" />

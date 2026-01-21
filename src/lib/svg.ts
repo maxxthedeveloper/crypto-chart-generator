@@ -6,6 +6,7 @@ export interface SparklineOptions {
   padding?: number;
   upColor?: string;
   downColor?: string;
+  customColor?: string | null;
   smooth?: boolean;
   smoothTension?: number;
   showKnob?: boolean;
@@ -79,6 +80,7 @@ export function generateSparklineSVG(
     padding = 4,
     upColor = '#00C853',
     downColor = '#FF5A5A',
+    customColor = null,
     smooth = false,
     smoothTension = 0.5,
     showKnob = false,
@@ -99,9 +101,14 @@ export function generateSparklineSVG(
 
   // Add extra padding for knob to prevent clipping
   const knobRadius = knobSize / 2;
-  const effectivePadding = showKnob
+  const basePadding = showKnob
     ? Math.max(padding, knobRadius + strokeWidth / 2)
     : padding;
+
+  // Add extra padding for smooth curves to prevent bezier overshoot clipping
+  const baseChartHeight = height - basePadding * 2;
+  const smoothPadding = smooth ? Math.ceil(baseChartHeight * smoothTension * 0.15) : 0;
+  const effectivePadding = basePadding + smoothPadding;
 
   const chartWidth = width - effectivePadding * 2;
   const chartHeight = height - effectivePadding * 2;
@@ -112,7 +119,7 @@ export function generateSparklineSVG(
   }));
 
   const isUp = values[values.length - 1] >= values[0];
-  const strokeColor = isUp ? upColor : downColor;
+  const strokeColor = customColor || (isUp ? upColor : downColor);
 
   const linePath = smooth ? catmullRomToBezier(points, smoothTension) : straightPath(points);
 
@@ -140,14 +147,23 @@ export function generateSparklineSVG(
   const fadeLeft = fadeEdges;
   const fadeRight = fadeEdges && !showKnob;
 
+  // Use stop-opacity for reliable transparency at edges
   const fadeMaskDef = fadeEdges ? `
     <linearGradient id="${fadeLeftId}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="black" />
-      <stop offset="${fadePercent * 100}%" stop-color="white" />
+      <stop offset="0%" stop-color="white" stop-opacity="0" />
+      <stop offset="20%" stop-color="white" stop-opacity="0.04" />
+      <stop offset="40%" stop-color="white" stop-opacity="0.16" />
+      <stop offset="60%" stop-color="white" stop-opacity="0.36" />
+      <stop offset="80%" stop-color="white" stop-opacity="0.64" />
+      <stop offset="100%" stop-color="white" stop-opacity="1" />
     </linearGradient>
     <linearGradient id="${fadeRightId}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="${(1 - fadePercent) * 100}%" stop-color="white" />
-      <stop offset="100%" stop-color="black" />
+      <stop offset="0%" stop-color="white" stop-opacity="1" />
+      <stop offset="20%" stop-color="white" stop-opacity="0.64" />
+      <stop offset="40%" stop-color="white" stop-opacity="0.36" />
+      <stop offset="60%" stop-color="white" stop-opacity="0.16" />
+      <stop offset="80%" stop-color="white" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="white" stop-opacity="0" />
     </linearGradient>
     <mask id="${maskId}">
       <rect width="${width}" height="${height}" fill="white" />
