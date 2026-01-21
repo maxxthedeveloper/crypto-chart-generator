@@ -41,19 +41,40 @@ function sampleData(data: [number, number][], interval: number): [number, number
 function App() {
   const { theme, setTheme } = useTheme();
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(() => {
+    const stored = localStorage.getItem('selectedToken');
+    return stored ? JSON.parse(stored) : null;
+  });
   const [searchQuery, setSearchQuery] = useState('');
-  const [timeframe, setTimeframe] = useState<Timeframe>('24H');
-  const [interval, setInterval] = useState<Interval>('5m');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('3:1');
-  const [chartWidth, setChartWidth] = useState(300);
-  const [customHeight, setCustomHeight] = useState(100);
-  const [fill, setFill] = useState(true);
+  const [timeframe, setTimeframe] = useState<Timeframe>(() =>
+    (localStorage.getItem('timeframe') as Timeframe) || '24H'
+  );
+  const [interval, setInterval] = useState<Interval>(() =>
+    (localStorage.getItem('interval') as Interval) || '5m'
+  );
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(() =>
+    (localStorage.getItem('aspectRatio') as AspectRatio) || '3:1'
+  );
+  const [chartWidth, setChartWidth] = useState(() =>
+    Number(localStorage.getItem('chartWidth')) || 300
+  );
+  const [customHeight, setCustomHeight] = useState(() =>
+    Number(localStorage.getItem('customHeight')) || 100
+  );
+  const [fill, setFill] = useState(() =>
+    localStorage.getItem('fill') !== 'false'
+  );
   const [upColor, setUpColor] = useState(() => localStorage.getItem('upColor') || '#22C55E');
   const [downColor, setDownColor] = useState(() => localStorage.getItem('downColor') || '#EF4444');
-  const [strokeWidth, setStrokeWidth] = useState(2);
-  const [smooth, setSmooth] = useState(false);
-  const [smoothTension, setSmoothTension] = useState(0.5);
+  const [strokeWidth, setStrokeWidth] = useState(() =>
+    Number(localStorage.getItem('strokeWidth')) || 2
+  );
+  const [smooth, setSmooth] = useState(() =>
+    localStorage.getItem('smooth') === 'true'
+  );
+  const [smoothTension, setSmoothTension] = useState(() =>
+    Number(localStorage.getItem('smoothTension')) || 0.5
+  );
   const [svgCode, setSvgCode] = useState('');
   const [isUp, setIsUp] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -63,6 +84,7 @@ function App() {
     ? customHeight
     : Math.round(chartWidth / ASPECT_RATIOS[aspectRatio]);
 
+  // Persist all settings to localStorage
   useEffect(() => {
     localStorage.setItem('upColor', upColor);
   }, [upColor]);
@@ -70,6 +92,48 @@ function App() {
   useEffect(() => {
     localStorage.setItem('downColor', downColor);
   }, [downColor]);
+
+  useEffect(() => {
+    if (selectedToken) {
+      localStorage.setItem('selectedToken', JSON.stringify(selectedToken));
+    }
+  }, [selectedToken]);
+
+  useEffect(() => {
+    localStorage.setItem('timeframe', timeframe);
+  }, [timeframe]);
+
+  useEffect(() => {
+    localStorage.setItem('interval', interval);
+  }, [interval]);
+
+  useEffect(() => {
+    localStorage.setItem('aspectRatio', aspectRatio);
+  }, [aspectRatio]);
+
+  useEffect(() => {
+    localStorage.setItem('chartWidth', String(chartWidth));
+  }, [chartWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('customHeight', String(customHeight));
+  }, [customHeight]);
+
+  useEffect(() => {
+    localStorage.setItem('fill', String(fill));
+  }, [fill]);
+
+  useEffect(() => {
+    localStorage.setItem('strokeWidth', String(strokeWidth));
+  }, [strokeWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('smooth', String(smooth));
+  }, [smooth]);
+
+  useEffect(() => {
+    localStorage.setItem('smoothTension', String(smoothTension));
+  }, [smoothTension]);
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
@@ -240,7 +304,7 @@ function App() {
           {/* Colors */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Green</label>
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Up Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -257,7 +321,7 @@ function App() {
               </div>
             </div>
             <div>
-              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Red</label>
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Down Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
