@@ -33,8 +33,8 @@ function App() {
   const [chartWidth, setChartWidth] = useState(300);
   const [customHeight, setCustomHeight] = useState(100);
   const [fill, setFill] = useState(true);
-  const [upColor, setUpColor] = useState('#00C853');
-  const [downColor, setDownColor] = useState('#FF5A5A');
+  const [upColor, setUpColor] = useState(() => localStorage.getItem('upColor') || '#22C55E');
+  const [downColor, setDownColor] = useState(() => localStorage.getItem('downColor') || '#EF4444');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [smooth, setSmooth] = useState(false);
   const [smoothTension, setSmoothTension] = useState(0.5);
@@ -46,6 +46,14 @@ function App() {
   const chartHeight = aspectRatio === 'Custom'
     ? customHeight
     : Math.round(chartWidth / ASPECT_RATIOS[aspectRatio]);
+
+  useEffect(() => {
+    localStorage.setItem('upColor', upColor);
+  }, [upColor]);
+
+  useEffect(() => {
+    localStorage.setItem('downColor', downColor);
+  }, [downColor]);
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
