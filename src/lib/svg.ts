@@ -147,22 +147,35 @@ export function generateSparklineSVG(
   const fadeLeft = fadeEdges;
   const fadeRight = fadeEdges && !showKnob;
 
-  // Use stop-opacity for reliable transparency at edges
+  // Use alpha-based masking (stop-opacity) for universal compatibility across renderers
+  // Eased gradient stops follow ease-out-sine curve for smooth perceptual fade
   const fadeMaskDef = fadeEdges ? `
     <linearGradient id="${fadeLeftId}" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="white" stop-opacity="0" />
-      <stop offset="20%" stop-color="white" stop-opacity="0.04" />
-      <stop offset="40%" stop-color="white" stop-opacity="0.16" />
-      <stop offset="60%" stop-color="white" stop-opacity="0.36" />
-      <stop offset="80%" stop-color="white" stop-opacity="0.64" />
+      <stop offset="19%" stop-color="white" stop-opacity="0.05" />
+      <stop offset="34%" stop-color="white" stop-opacity="0.15" />
+      <stop offset="47%" stop-color="white" stop-opacity="0.26" />
+      <stop offset="56.5%" stop-color="white" stop-opacity="0.36" />
+      <stop offset="65%" stop-color="white" stop-opacity="0.48" />
+      <stop offset="73%" stop-color="white" stop-opacity="0.62" />
+      <stop offset="80.2%" stop-color="white" stop-opacity="0.75" />
+      <stop offset="86.1%" stop-color="white" stop-opacity="0.84" />
+      <stop offset="91%" stop-color="white" stop-opacity="0.91" />
+      <stop offset="95.2%" stop-color="white" stop-opacity="0.96" />
       <stop offset="100%" stop-color="white" stop-opacity="1" />
     </linearGradient>
     <linearGradient id="${fadeRightId}" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="white" stop-opacity="1" />
-      <stop offset="20%" stop-color="white" stop-opacity="0.64" />
-      <stop offset="40%" stop-color="white" stop-opacity="0.36" />
-      <stop offset="60%" stop-color="white" stop-opacity="0.16" />
-      <stop offset="80%" stop-color="white" stop-opacity="0.04" />
+      <stop offset="4.8%" stop-color="white" stop-opacity="0.96" />
+      <stop offset="9%" stop-color="white" stop-opacity="0.91" />
+      <stop offset="13.9%" stop-color="white" stop-opacity="0.84" />
+      <stop offset="19.8%" stop-color="white" stop-opacity="0.75" />
+      <stop offset="27%" stop-color="white" stop-opacity="0.62" />
+      <stop offset="35%" stop-color="white" stop-opacity="0.48" />
+      <stop offset="43.5%" stop-color="white" stop-opacity="0.36" />
+      <stop offset="53%" stop-color="white" stop-opacity="0.26" />
+      <stop offset="66%" stop-color="white" stop-opacity="0.15" />
+      <stop offset="81%" stop-color="white" stop-opacity="0.05" />
       <stop offset="100%" stop-color="white" stop-opacity="0" />
     </linearGradient>
     <mask id="${maskId}">
