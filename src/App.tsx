@@ -15,6 +15,7 @@ import {
 } from '@heroui/react';
 import { searchTokens, getMarketChart, Token } from './lib/api';
 import { generateSparklineSVG } from './lib/svg';
+import { extractDominantColor } from './lib/colorExtractor';
 import { useTheme } from './main';
 
 type Timeframe = '1H' | '24H' | '7D' | '30D';
@@ -64,12 +65,14 @@ function App() {
   const [aspectLocked, setAspectLocked] = useState(() =>
     localStorage.getItem('aspectLocked') === 'true'
   );
-  const [chartWidth, setChartWidth] = useState(() =>
-    Number(localStorage.getItem('chartWidth')) || 300
-  );
-  const [chartHeight, setChartHeight] = useState(() =>
-    Number(localStorage.getItem('chartHeight')) || 100
-  );
+  const [chartWidth, setChartWidth] = useState(() => {
+    const stored = Number(localStorage.getItem('chartWidth')) || 300;
+    return Math.min(Math.max(stored, 50), 2000);
+  });
+  const [chartHeight, setChartHeight] = useState(() => {
+    const stored = Number(localStorage.getItem('chartHeight')) || 100;
+    return Math.min(Math.max(stored, 20), 1000);
+  });
   const [lockedRatio, setLockedRatio] = useState(() =>
     Number(localStorage.getItem('lockedRatio')) || 3
   );
@@ -110,6 +113,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [priceData, setPriceData] = useState<[number, number][] | null>(null);
+  const [extractingColor, setExtractingColor] = useState(false);
 
   // Dimension change handlers with aspect lock logic
   const handleWidthChange = (newWidth: number) => {
@@ -295,6 +299,20 @@ function App() {
     }
   };
 
+  const handlePullTokenColor = async () => {
+    if (!selectedToken?.image) return;
+    setExtractingColor(true);
+    try {
+      const color = await extractDominantColor(selectedToken.image);
+      setCustomColor(color);
+      setUseCustomColor(true);
+    } catch (error) {
+      console.error('Failed to extract color:', error);
+    } finally {
+      setExtractingColor(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left sidebar - Controls */}
@@ -413,6 +431,18 @@ function App() {
                 >
                   <span className="text-sm">Use Custom Color</span>
                 </Switch>
+                {selectedToken?.image && (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={handlePullTokenColor}
+                    isLoading={extractingColor}
+                    isDisabled={extractingColor}
+                    className="w-full"
+                  >
+                    {extractingColor ? 'Extracting...' : 'Pull Token Color'}
+                  </Button>
+                )}
                 {useCustomColor ? (
                   <div className="ml-4 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700">
                     <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Custom Color</label>
@@ -669,21 +699,21 @@ function App() {
                   <Button
                     size="sm"
                     variant="flat"
-                    onPress={() => setSelectedToken({ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' })}
+                    onPress={() => setSelectedToken({ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' })}
                   >
                     BTC
                   </Button>
                   <Button
                     size="sm"
                     variant="flat"
-                    onPress={() => setSelectedToken({ id: 'ethereum', symbol: 'ETH', name: 'Ethereum' })}
+                    onPress={() => setSelectedToken({ id: 'ethereum', symbol: 'ETH', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' })}
                   >
                     ETH
                   </Button>
                   <Button
                     size="sm"
                     variant="flat"
-                    onPress={() => setSelectedToken({ id: 'solana', symbol: 'SOL', name: 'Solana' })}
+                    onPress={() => setSelectedToken({ id: 'solana', symbol: 'SOL', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' })}
                   >
                     SOL
                   </Button>
