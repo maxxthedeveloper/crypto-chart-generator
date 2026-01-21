@@ -17,6 +17,7 @@ import { generateSparklineSVG } from './lib/svg';
 import { useTheme } from './main';
 
 type Timeframe = '1H' | '24H' | '7D' | '30D';
+type Interval = '5m' | '15m' | '1h' | '4h';
 type AspectRatio = '16:9' | '3:1' | '4:1' | 'Custom';
 
 const ASPECT_RATIOS: Record<Exclude<AspectRatio, 'Custom'>, number> = {
@@ -24,6 +25,18 @@ const ASPECT_RATIOS: Record<Exclude<AspectRatio, 'Custom'>, number> = {
   '3:1': 3,
   '4:1': 4,
 };
+
+const INTERVAL_SAMPLES: Record<Interval, number> = {
+  '5m': 1,
+  '15m': 3,
+  '1h': 12,
+  '4h': 48,
+};
+
+function sampleData(data: [number, number][], interval: number): [number, number][] {
+  if (interval <= 1) return data;
+  return data.filter((_, i) => i % interval === 0);
+}
 
 function App() {
   const { theme, setTheme } = useTheme();
@@ -35,6 +48,9 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [timeframe, setTimeframe] = useState<Timeframe>(() =>
     (localStorage.getItem('timeframe') as Timeframe) || '24H'
+  );
+  const [interval, setInterval] = useState<Interval>(() =>
+    (localStorage.getItem('interval') as Interval) || '5m'
   );
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(() =>
     (localStorage.getItem('aspectRatio') as AspectRatio) || '3:1'
@@ -88,6 +104,10 @@ function App() {
   }, [timeframe]);
 
   useEffect(() => {
+    localStorage.setItem('interval', interval);
+  }, [interval]);
+
+  useEffect(() => {
     localStorage.setItem('aspectRatio', aspectRatio);
   }, [aspectRatio]);
 
@@ -136,7 +156,8 @@ function App() {
 
     setLoading(true);
     try {
-      const prices = await getMarketChart(selectedToken.id, timeframe);
+      const rawPrices = await getMarketChart(selectedToken.id, timeframe);
+      const prices = sampleData(rawPrices, INTERVAL_SAMPLES[interval]);
       const result = generateSparklineSVG(prices, {
         width: chartWidth,
         height: chartHeight,
@@ -155,7 +176,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedToken, timeframe, chartWidth, chartHeight, fill, upColor, downColor, strokeWidth, smooth, smoothTension]);
+  }, [selectedToken, timeframe, interval, chartWidth, chartHeight, fill, upColor, downColor, strokeWidth, smooth, smoothTension]);
 
   useEffect(() => {
     fetchChart();
@@ -216,6 +237,23 @@ function App() {
               <Tab key="24H" title="24H" />
               <Tab key="7D" title="7D" />
               <Tab key="30D" title="30D" />
+            </Tabs>
+          </div>
+
+          {/* Interval */}
+          <div>
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Interval</label>
+            <Tabs
+              selectedKey={interval}
+              onSelectionChange={(key) => setInterval(key as Interval)}
+              fullWidth
+              size="sm"
+              classNames={{ tabList: "dark:bg-zinc-800 bg-zinc-100" }}
+            >
+              <Tab key="5m" title="5m" />
+              <Tab key="15m" title="15m" />
+              <Tab key="1h" title="1h" />
+              <Tab key="4h" title="4h" />
             </Tabs>
           </div>
 
