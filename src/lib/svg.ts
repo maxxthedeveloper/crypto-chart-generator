@@ -179,8 +179,8 @@ export function generateSparklineSVG(
       <stop offset="100%" stop-color="white" stop-opacity="0" />
     </linearGradient>
     <mask id="${maskId}">
-      <rect width="${width}" height="${height}" fill="white" />
       ${fadeLeft ? `<rect width="${width * fadePercent}" height="${height}" fill="url(#${fadeLeftId})" />` : ''}
+      <rect x="${fadeLeft ? width * fadePercent : 0}" width="${width - (fadeLeft ? width * fadePercent : 0) - (fadeRight ? width * fadePercent : 0)}" height="${height}" fill="white" />
       ${fadeRight ? `<rect x="${width * (1 - fadePercent)}" width="${width * fadePercent}" height="${height}" fill="url(#${fadeRightId})" />` : ''}
     </mask>` : '';
 
