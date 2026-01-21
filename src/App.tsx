@@ -14,8 +14,10 @@ import {
 } from '@heroui/react';
 import { searchTokens, getMarketChart, Token } from './lib/api';
 import { generateSparklineSVG } from './lib/svg';
+import { useTheme } from './main';
 
 type Timeframe = '1H' | '24H' | '7D' | '30D';
+type Interval = '5m' | '15m' | '1h' | '4h';
 type AspectRatio = '16:9' | '3:1' | '4:1' | 'Custom';
 
 const ASPECT_RATIOS: Record<Exclude<AspectRatio, 'Custom'>, number> = {
@@ -24,11 +26,25 @@ const ASPECT_RATIOS: Record<Exclude<AspectRatio, 'Custom'>, number> = {
   '4:1': 4,
 };
 
+const INTERVAL_SAMPLES: Record<Interval, number> = {
+  '5m': 1,
+  '15m': 3,
+  '1h': 12,
+  '4h': 48,
+};
+
+function sampleData(data: [number, number][], interval: number): [number, number][] {
+  if (interval <= 1) return data;
+  return data.filter((_, i) => i % interval === 0);
+}
+
 function App() {
+  const { theme, setTheme } = useTheme();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [timeframe, setTimeframe] = useState<Timeframe>('24H');
+  const [interval, setInterval] = useState<Interval>('5m');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('3:1');
   const [chartWidth, setChartWidth] = useState(300);
   const [customHeight, setCustomHeight] = useState(100);
@@ -76,7 +92,8 @@ function App() {
 
     setLoading(true);
     try {
-      const prices = await getMarketChart(selectedToken.id, timeframe);
+      const rawPrices = await getMarketChart(selectedToken.id, timeframe);
+      const prices = sampleData(rawPrices, INTERVAL_SAMPLES[interval]);
       const result = generateSparklineSVG(prices, {
         width: chartWidth,
         height: chartHeight,
@@ -95,7 +112,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedToken, timeframe, chartWidth, chartHeight, fill, upColor, downColor, strokeWidth, smooth, smoothTension]);
+  }, [selectedToken, timeframe, interval, chartWidth, chartHeight, fill, upColor, downColor, strokeWidth, smooth, smoothTension]);
 
   useEffect(() => {
     fetchChart();
@@ -120,7 +137,7 @@ function App() {
   return (
     <div className="min-h-screen flex">
       {/* Left sidebar - Controls */}
-      <Card className="w-80 rounded-none border-r border-zinc-800 bg-zinc-900 h-screen overflow-y-auto">
+      <Card className="w-80 rounded-none border-r dark:border-zinc-800 border-zinc-200 dark:bg-zinc-900 bg-white h-screen overflow-y-auto">
         <CardBody className="gap-5 p-5">
           {/* Token Search */}
           <Autocomplete
@@ -136,7 +153,7 @@ function App() {
               <AutocompleteItem key={token.id} textValue={token.symbol}>
                 <div className="flex gap-2 items-center">
                   <span className="font-medium">{token.symbol}</span>
-                  <span className="text-zinc-400 text-sm">{token.name}</span>
+                  <span className="dark:text-zinc-400 text-zinc-600 text-sm">{token.name}</span>
                 </div>
               </AutocompleteItem>
             )}
@@ -144,13 +161,13 @@ function App() {
 
           {/* Timeframe */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">Timeframe</label>
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Timeframe</label>
             <Tabs
               selectedKey={timeframe}
               onSelectionChange={(key) => setTimeframe(key as Timeframe)}
               fullWidth
               size="sm"
-              classNames={{ tabList: "bg-zinc-800" }}
+              classNames={{ tabList: "dark:bg-zinc-800 bg-zinc-100" }}
             >
               <Tab key="1H" title="1H" />
               <Tab key="24H" title="24H" />
@@ -159,15 +176,32 @@ function App() {
             </Tabs>
           </div>
 
+          {/* Interval */}
+          <div>
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Interval</label>
+            <Tabs
+              selectedKey={interval}
+              onSelectionChange={(key) => setInterval(key as Interval)}
+              fullWidth
+              size="sm"
+              classNames={{ tabList: "dark:bg-zinc-800 bg-zinc-100" }}
+            >
+              <Tab key="5m" title="5m" />
+              <Tab key="15m" title="15m" />
+              <Tab key="1h" title="1h" />
+              <Tab key="4h" title="4h" />
+            </Tabs>
+          </div>
+
           {/* Aspect Ratio */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">Aspect Ratio</label>
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Aspect Ratio</label>
             <Tabs
               selectedKey={aspectRatio}
               onSelectionChange={(key) => setAspectRatio(key as AspectRatio)}
               fullWidth
               size="sm"
-              classNames={{ tabList: "bg-zinc-800" }}
+              classNames={{ tabList: "dark:bg-zinc-800 bg-zinc-100" }}
             >
               <Tab key="16:9" title="16:9" />
               <Tab key="3:1" title="3:1" />
@@ -184,7 +218,7 @@ function App() {
               size="sm"
               value={String(chartWidth)}
               onChange={(e) => setChartWidth(Number(e.target.value) || 300)}
-              endContent={<span className="text-zinc-500 text-xs">px</span>}
+              endContent={<span className="dark:text-zinc-500 text-zinc-400 text-xs">px</span>}
             />
             <Input
               type="number"
@@ -195,10 +229,10 @@ function App() {
                 if (aspectRatio !== 'Custom') setAspectRatio('Custom');
                 setCustomHeight(Number(e.target.value) || 100);
               }}
-              endContent={<span className="text-zinc-500 text-xs">px</span>}
+              endContent={<span className="dark:text-zinc-500 text-zinc-400 text-xs">px</span>}
               isReadOnly={aspectRatio !== 'Custom'}
               classNames={{
-                input: aspectRatio !== 'Custom' ? 'text-zinc-500' : '',
+                input: aspectRatio !== 'Custom' ? 'dark:text-zinc-500 text-zinc-400' : '',
               }}
             />
           </div>
@@ -206,7 +240,7 @@ function App() {
           {/* Colors */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-zinc-400 mb-2 block">Up Color</label>
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Green</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -223,7 +257,7 @@ function App() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-zinc-400 mb-2 block">Down Color</label>
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Red</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -243,7 +277,7 @@ function App() {
 
           {/* Line Thickness */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
               Line Thickness: {strokeWidth}px
             </label>
             <Slider
@@ -254,7 +288,7 @@ function App() {
               value={strokeWidth}
               onChange={(v) => setStrokeWidth(v as number)}
               classNames={{
-                track: "bg-zinc-700",
+                track: "dark:bg-zinc-700 bg-zinc-200",
               }}
             />
           </div>
@@ -275,12 +309,19 @@ function App() {
             >
               <span className="text-sm">Smooth Curves</span>
             </Switch>
+            <Switch
+              isSelected={theme === 'dark'}
+              onValueChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
+              size="sm"
+            >
+              <span className="text-sm">Dark Mode</span>
+            </Switch>
           </div>
 
           {/* Smooth Tension Slider */}
           {smooth && (
             <div>
-              <label className="text-xs text-zinc-400 mb-2 block">
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
                 Curve Tension: {smoothTension.toFixed(2)}
               </label>
               <Slider
@@ -291,7 +332,7 @@ function App() {
                 value={smoothTension}
                 onChange={(v) => setSmoothTension(v as number)}
                 classNames={{
-                  track: "bg-zinc-700",
+                  track: "dark:bg-zinc-700 bg-zinc-200",
                 }}
               />
             </div>
@@ -312,14 +353,14 @@ function App() {
       </Card>
 
       {/* Main area - Chart centered */}
-      <div className="flex-1 flex items-center justify-center bg-black">
+      <div className="flex-1 flex items-center justify-center dark:bg-black bg-zinc-100">
         <div className="flex flex-col items-center justify-center gap-4">
           {loading ? (
             <Spinner size="lg" />
           ) : svgCode ? (
             <>
               {selectedToken && (
-                <span className="text-zinc-500 text-sm font-medium tracking-wide">
+                <span className="dark:text-zinc-500 text-zinc-400 text-sm font-medium tracking-wide">
                   {selectedToken.symbol}
                 </span>
               )}
@@ -327,7 +368,7 @@ function App() {
             </>
           ) : (
             <>
-              <span className="text-zinc-600 text-lg">
+              <span className="dark:text-zinc-600 text-zinc-400 text-lg">
                 {selectedToken ? 'No data' : 'Select a token'}
               </span>
               {!selectedToken && (
