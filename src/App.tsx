@@ -14,6 +14,7 @@ import {
 } from '@heroui/react';
 import { searchTokens, getMarketChart, Token } from './lib/api';
 import { generateSparklineSVG } from './lib/svg';
+import { useTheme } from './main';
 
 type Timeframe = '1H' | '24H' | '7D' | '30D';
 type AspectRatio = '16:9' | '3:1' | '4:1' | 'Custom';
@@ -25,19 +26,39 @@ const ASPECT_RATIOS: Record<Exclude<AspectRatio, 'Custom'>, number> = {
 };
 
 function App() {
+  const { theme, setTheme } = useTheme();
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(() => {
+    const stored = localStorage.getItem('selectedToken');
+    return stored ? JSON.parse(stored) : null;
+  });
   const [searchQuery, setSearchQuery] = useState('');
-  const [timeframe, setTimeframe] = useState<Timeframe>('24H');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('3:1');
-  const [chartWidth, setChartWidth] = useState(300);
-  const [customHeight, setCustomHeight] = useState(100);
-  const [fill, setFill] = useState(true);
+  const [timeframe, setTimeframe] = useState<Timeframe>(() =>
+    (localStorage.getItem('timeframe') as Timeframe) || '24H'
+  );
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(() =>
+    (localStorage.getItem('aspectRatio') as AspectRatio) || '3:1'
+  );
+  const [chartWidth, setChartWidth] = useState(() =>
+    Number(localStorage.getItem('chartWidth')) || 300
+  );
+  const [customHeight, setCustomHeight] = useState(() =>
+    Number(localStorage.getItem('customHeight')) || 100
+  );
+  const [fill, setFill] = useState(() =>
+    localStorage.getItem('fill') !== 'false'
+  );
   const [upColor, setUpColor] = useState(() => localStorage.getItem('upColor') || '#22C55E');
   const [downColor, setDownColor] = useState(() => localStorage.getItem('downColor') || '#EF4444');
-  const [strokeWidth, setStrokeWidth] = useState(2);
-  const [smooth, setSmooth] = useState(false);
-  const [smoothTension, setSmoothTension] = useState(0.5);
+  const [strokeWidth, setStrokeWidth] = useState(() =>
+    Number(localStorage.getItem('strokeWidth')) || 2
+  );
+  const [smooth, setSmooth] = useState(() =>
+    localStorage.getItem('smooth') === 'true'
+  );
+  const [smoothTension, setSmoothTension] = useState(() =>
+    Number(localStorage.getItem('smoothTension')) || 0.5
+  );
   const [svgCode, setSvgCode] = useState('');
   const [isUp, setIsUp] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -47,6 +68,7 @@ function App() {
     ? customHeight
     : Math.round(chartWidth / ASPECT_RATIOS[aspectRatio]);
 
+  // Persist all settings to localStorage
   useEffect(() => {
     localStorage.setItem('upColor', upColor);
   }, [upColor]);
@@ -54,6 +76,44 @@ function App() {
   useEffect(() => {
     localStorage.setItem('downColor', downColor);
   }, [downColor]);
+
+  useEffect(() => {
+    if (selectedToken) {
+      localStorage.setItem('selectedToken', JSON.stringify(selectedToken));
+    }
+  }, [selectedToken]);
+
+  useEffect(() => {
+    localStorage.setItem('timeframe', timeframe);
+  }, [timeframe]);
+
+  useEffect(() => {
+    localStorage.setItem('aspectRatio', aspectRatio);
+  }, [aspectRatio]);
+
+  useEffect(() => {
+    localStorage.setItem('chartWidth', String(chartWidth));
+  }, [chartWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('customHeight', String(customHeight));
+  }, [customHeight]);
+
+  useEffect(() => {
+    localStorage.setItem('fill', String(fill));
+  }, [fill]);
+
+  useEffect(() => {
+    localStorage.setItem('strokeWidth', String(strokeWidth));
+  }, [strokeWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('smooth', String(smooth));
+  }, [smooth]);
+
+  useEffect(() => {
+    localStorage.setItem('smoothTension', String(smoothTension));
+  }, [smoothTension]);
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
@@ -120,7 +180,7 @@ function App() {
   return (
     <div className="min-h-screen flex">
       {/* Left sidebar - Controls */}
-      <Card className="w-80 rounded-none border-r border-zinc-800 bg-zinc-900 h-screen overflow-y-auto">
+      <Card className="w-80 rounded-none border-r dark:border-zinc-800 border-zinc-200 dark:bg-zinc-900 bg-white h-screen overflow-y-auto">
         <CardBody className="gap-5 p-5">
           {/* Token Search */}
           <Autocomplete
@@ -136,7 +196,7 @@ function App() {
               <AutocompleteItem key={token.id} textValue={token.symbol}>
                 <div className="flex gap-2 items-center">
                   <span className="font-medium">{token.symbol}</span>
-                  <span className="text-zinc-400 text-sm">{token.name}</span>
+                  <span className="dark:text-zinc-400 text-zinc-600 text-sm">{token.name}</span>
                 </div>
               </AutocompleteItem>
             )}
@@ -144,13 +204,13 @@ function App() {
 
           {/* Timeframe */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">Timeframe</label>
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Timeframe</label>
             <Tabs
               selectedKey={timeframe}
               onSelectionChange={(key) => setTimeframe(key as Timeframe)}
               fullWidth
               size="sm"
-              classNames={{ tabList: "bg-zinc-800" }}
+              classNames={{ tabList: "dark:bg-zinc-800 bg-zinc-100" }}
             >
               <Tab key="1H" title="1H" />
               <Tab key="24H" title="24H" />
@@ -161,13 +221,13 @@ function App() {
 
           {/* Aspect Ratio */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">Aspect Ratio</label>
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Aspect Ratio</label>
             <Tabs
               selectedKey={aspectRatio}
               onSelectionChange={(key) => setAspectRatio(key as AspectRatio)}
               fullWidth
               size="sm"
-              classNames={{ tabList: "bg-zinc-800" }}
+              classNames={{ tabList: "dark:bg-zinc-800 bg-zinc-100" }}
             >
               <Tab key="16:9" title="16:9" />
               <Tab key="3:1" title="3:1" />
@@ -184,7 +244,7 @@ function App() {
               size="sm"
               value={String(chartWidth)}
               onChange={(e) => setChartWidth(Number(e.target.value) || 300)}
-              endContent={<span className="text-zinc-500 text-xs">px</span>}
+              endContent={<span className="dark:text-zinc-500 text-zinc-400 text-xs">px</span>}
             />
             <Input
               type="number"
@@ -195,10 +255,10 @@ function App() {
                 if (aspectRatio !== 'Custom') setAspectRatio('Custom');
                 setCustomHeight(Number(e.target.value) || 100);
               }}
-              endContent={<span className="text-zinc-500 text-xs">px</span>}
+              endContent={<span className="dark:text-zinc-500 text-zinc-400 text-xs">px</span>}
               isReadOnly={aspectRatio !== 'Custom'}
               classNames={{
-                input: aspectRatio !== 'Custom' ? 'text-zinc-500' : '',
+                input: aspectRatio !== 'Custom' ? 'dark:text-zinc-500 text-zinc-400' : '',
               }}
             />
           </div>
@@ -206,7 +266,7 @@ function App() {
           {/* Colors */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-zinc-400 mb-2 block">Up Color</label>
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Up Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -223,7 +283,7 @@ function App() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-zinc-400 mb-2 block">Down Color</label>
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">Down Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -243,7 +303,7 @@ function App() {
 
           {/* Line Thickness */}
           <div>
-            <label className="text-xs text-zinc-400 mb-2 block">
+            <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
               Line Thickness: {strokeWidth}px
             </label>
             <Slider
@@ -254,7 +314,7 @@ function App() {
               value={strokeWidth}
               onChange={(v) => setStrokeWidth(v as number)}
               classNames={{
-                track: "bg-zinc-700",
+                track: "dark:bg-zinc-700 bg-zinc-200",
               }}
             />
           </div>
@@ -275,12 +335,19 @@ function App() {
             >
               <span className="text-sm">Smooth Curves</span>
             </Switch>
+            <Switch
+              isSelected={theme === 'dark'}
+              onValueChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
+              size="sm"
+            >
+              <span className="text-sm">Dark Mode</span>
+            </Switch>
           </div>
 
           {/* Smooth Tension Slider */}
           {smooth && (
             <div>
-              <label className="text-xs text-zinc-400 mb-2 block">
+              <label className="text-xs dark:text-zinc-400 text-zinc-600 mb-2 block">
                 Curve Tension: {smoothTension.toFixed(2)}
               </label>
               <Slider
@@ -291,7 +358,7 @@ function App() {
                 value={smoothTension}
                 onChange={(v) => setSmoothTension(v as number)}
                 classNames={{
-                  track: "bg-zinc-700",
+                  track: "dark:bg-zinc-700 bg-zinc-200",
                 }}
               />
             </div>
@@ -312,14 +379,14 @@ function App() {
       </Card>
 
       {/* Main area - Chart centered */}
-      <div className="flex-1 flex items-center justify-center bg-black">
+      <div className="flex-1 flex items-center justify-center dark:bg-black bg-zinc-100">
         <div className="flex flex-col items-center justify-center gap-4">
           {loading ? (
             <Spinner size="lg" />
           ) : svgCode ? (
             <>
               {selectedToken && (
-                <span className="text-zinc-500 text-sm font-medium tracking-wide">
+                <span className="dark:text-zinc-500 text-zinc-400 text-sm font-medium tracking-wide">
                   {selectedToken.symbol}
                 </span>
               )}
@@ -327,7 +394,7 @@ function App() {
             </>
           ) : (
             <>
-              <span className="text-zinc-600 text-lg">
+              <span className="dark:text-zinc-600 text-zinc-400 text-lg">
                 {selectedToken ? 'No data' : 'Select a token'}
               </span>
               {!selectedToken && (
