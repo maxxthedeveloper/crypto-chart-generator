@@ -106,7 +106,7 @@ function App() {
     Number(localStorage.getItem('fadeAmount')) || 30
   );
   const [svgCode, setSvgCode] = useState('');
-  const [isUp, setIsUp] = useState(true);
+  const [_isUp, setIsUp] = useState(true);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [priceData, setPriceData] = useState<[number, number][] | null>(null);
